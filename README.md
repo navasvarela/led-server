@@ -1,0 +1,1 @@
+A minimal java web server based on Java 7 NIO.2/AIO APIs. With no extra requirements, and tuned for performance http applications.  
