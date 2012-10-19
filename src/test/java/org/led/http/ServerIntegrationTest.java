@@ -5,16 +5,16 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ServerIntegrationTest {
 
-    private Server server;
+    private static Server server;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeClass
+    public static void setup() throws Exception {
         Thread serverThread = new Thread(new Runnable() {
 
             @Override
@@ -40,8 +40,8 @@ public class ServerIntegrationTest {
 
     }
 
-    @After
-    public void after() {
+    @AfterClass
+    public static void after() {
         server.stop();
     }
 
