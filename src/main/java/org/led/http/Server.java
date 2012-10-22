@@ -45,7 +45,7 @@ public class Server {
             group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
             LOG.info("Terminating ");
         } catch (InterruptedException e) {
-
+            Thread.currentThread().interrupt();
         }
 
     }

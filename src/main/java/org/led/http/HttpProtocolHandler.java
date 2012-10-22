@@ -61,26 +61,42 @@ public class HttpProtocolHandler implements
             // Clear the buffer and read bytes from socket
             buf.clear();
             int bytesRead;
+
             do {
                 bytesRead = channel.read(buf).get();
+
                 if (bytesRead != -1) {
                     buf.flip();
                     // Read the bytes from the buffer ...;
+                    // TODO 1. Read Request Line and get Request Object
+                    HttpRequest request = Parser.parseRequestLine(buf);
+                    // TODO 2. Read Content Headers
+                    String[] header = new String[2];
+                    while (header != null) {
+                        header = Parser.parseHeaderLine(buf);
+                        if (header != null) {
+                            request.addHeader(header[0], header[1]);
+                        }
+                    }
+
+                    // TODO 4. Apply Filters
+                    // TODO 5. Invoke RequestHandler/Router
                     LOG.debug("Reading...");
-                    message += readFromByteBuffer(buf);
+                    // message += readFromByteBuffer(buf);
                     buf.clear();
 
                 }
             } while (bytesRead != -1 && bytesRead == BUFFER_SIZE);
-
-            LOG.debug("REQUEST: " + message);
-            channel.write(toByteBuffer(HTTP_1_1 + HttpStatus.HTTP_OK));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("REQUEST: " + message);
+            }
+            channel.write(toByteBuffer(HTTP_1_1 + HttpStatus.OK));
         } catch (ExecutionException | InterruptedException
                 | CharacterCodingException e) {
             LOG.error(e);
             try {
                 channel.write(toByteBuffer("HTTP 1.1 "
-                        + HttpStatus.HTTP_INTERNALERROR));
+                        + HttpStatus.INTERNALERROR));
             } catch (CharacterCodingException e1) {
                 LOG.error("Cannot Send Response: " + e1.getMessage(), e1);
             }
@@ -100,13 +116,7 @@ public class HttpProtocolHandler implements
         }
     }
 
-    private String readFromByteBuffer(ByteBuffer buf)
-            throws CharacterCodingException {
-        LOG.debug("readFromByteBuffer");
-        decoder.reset();
-        return decoder.decode(buf).toString();
-    }
-
+    // We'll use this for the response.
     private ByteBuffer toByteBuffer(String message)
             throws CharacterCodingException {
         if (LOG.isDebugEnabled())
