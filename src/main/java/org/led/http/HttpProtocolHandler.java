@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.led.http.protocol.HttpStatus;
+import org.led.util.ChannelUtils;
 
 public class HttpProtocolHandler implements
         CompletionHandler<AsynchronousSocketChannel, Void> {
@@ -23,20 +24,23 @@ public class HttpProtocolHandler implements
             .getLogger(HttpProtocolHandler.class);
     private final Charset UTF_8 = Charset.forName("UTF-8");
     private final CharsetEncoder encoder = UTF_8.newEncoder();
+    private final int maxPostMB;
 
     private static final int BUFFER_SIZE = 4 * 1024;
 
     private final AsynchronousServerSocketChannel listener;
 
-    public HttpProtocolHandler(AsynchronousServerSocketChannel theListener) {
+    public HttpProtocolHandler(AsynchronousServerSocketChannel theListener,
+            int max) {
         listener = theListener;
+        maxPostMB = max * 1024 * 1024;
     }
 
     @Override
     public void completed(AsynchronousSocketChannel result, Void theAttachment) {
         // process next request
         LOG.debug("Completed");
-        listener.accept(null, new HttpProtocolHandler(listener));
+        listener.accept(null, new HttpProtocolHandler(listener, maxPostMB));
         handle(result);
 
     }
@@ -52,33 +56,34 @@ public class HttpProtocolHandler implements
         // Direct buffers should be long-lived and be reused as much as
         // possible.
         LOG.debug("Handling message");
-        ByteBuffer buf = ByteBuffer.allocateDirect(BUFFER_SIZE);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
         try {
             // Clear the buffer and read bytes from socket
-            buf.clear();
+            buffer.clear();
             int bytesRead;
 
-            bytesRead = channel.read(buf).get();
+            bytesRead = channel.read(buffer).get();
 
             if (bytesRead != -1) {
-                buf.flip();
+                buffer.flip();
                 // Read the bytes from the buffer ...;
                 // 1. Read Request Line and get Request Object
-                HttpRequest request = Parser.parseRequestLine(buf);
+                HttpRequest request = Parser.parseRequestLine(buffer);
                 // TODO 2. Read Content Headers
                 String[] header = new String[2];
-                while ((header = Parser.parseHeaderLine(buf)) != null
+                while ((header = Parser.parseHeaderLine(buffer)) != null
                         && !"".equalsIgnoreCase(header[0])) {
-
                     request.addHeader(header[0], header[1]);
-
                 }
-                // TODO 3. Read body (what about multipart?)
+                // 3. Read body fully (what about multipart?)
+                byte[] bodyBytes = ChannelUtils.readFully(buffer, channel,
+                        maxPostMB);
+                request.setBody(bodyBytes);
                 // TODO 4. Apply Filters
                 // TODO 5. Invoke RequestHandler/Router
 
-                buf.clear();
+                buffer.clear();
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("REQUEST: " + request);

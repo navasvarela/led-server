@@ -31,7 +31,7 @@ public class ServerIntegrationTest {
 
             @Override
             public void run() {
-                server = new Server(new ServerConfiguration(8889, 10));
+                server = new Server(new ServerConfiguration(8889, 10, 10));
                 try {
                     server.start();
                     Thread.sleep(1000);

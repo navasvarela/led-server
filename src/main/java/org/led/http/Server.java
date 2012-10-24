@@ -29,7 +29,7 @@ public class Server {
     public void start() throws IOException {
         LOG.debug("Starting LED Server on Port: " + configuration.getPort());
         group = AsynchronousChannelGroup.withCachedThreadPool(
-                Executors.newCachedThreadPool(), 10);
+                Executors.newCachedThreadPool(), configuration.getThreads());
         final AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel
                 .open(group).bind(
                         new InetSocketAddress(configuration.getPort()));
@@ -38,7 +38,7 @@ public class Server {
         serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 
         serverSocketChannel.accept(null, new HttpProtocolHandler(
-                serverSocketChannel));
+                serverSocketChannel, configuration.getMaxPostMB()));
         started = true;
         LOG.debug("Server started successfully");
         try {

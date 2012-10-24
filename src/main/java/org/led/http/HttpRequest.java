@@ -7,11 +7,15 @@ import org.led.http.protocol.HttpMethod;
 
 public class HttpRequest {
 
+    private static final int SMALL_BODY_LIMIT = 128;
+
     private final HttpMethod method;
 
     private final String path;
 
     private final Map<String, String> headers;
+
+    private byte[] body;
 
     protected HttpRequest(HttpMethod theMethod, String thePath,
             Map<String, String> theHeaders) {
@@ -30,6 +34,14 @@ public class HttpRequest {
         headers.put(key, value);
     }
 
+    protected void setBody(byte[] theBody) {
+        body = theBody;
+    }
+
+    public byte[] getBody() {
+        return body;
+    }
+
     public HttpMethod getMethod() {
         return method;
     }
@@ -44,8 +56,12 @@ public class HttpRequest {
 
     @Override
     public String toString() {
-        return "HttpRequest [method=" + method + ", path=" + path
-                + ", headers=" + headers + "]";
+        String string = "HttpRequest [method=" + method + ", path=" + path
+                + ", headers=" + headers;
+        if (body != null && body.length < 128) {
+            string += ", body=" + new String(body);
+        }
+        return string + "]";
     }
 
 }
