@@ -22,4 +22,24 @@ public class ParserTest {
         assertEquals("/test", request.getPath());
     }
 
+    @Test
+    public void shouldParseHeader() throws Exception {
+        ByteBuffer buf = ByteBuffer.wrap("Content-Type: text/html\r\n"
+                .getBytes());
+        // act
+        String[] header = Parser.parseHeaderLine(buf);
+        // assert
+        assertEquals("Content-Type", header[0]);
+        assertEquals("text/html", header[1]);
+    }
+
+    @Test
+    public void shouldFindEmptyLine() {
+        ByteBuffer buf = ByteBuffer.wrap("\r\n".getBytes());
+        // act
+        String[] header = Parser.parseHeaderLine(buf);
+        // assert
+        assertEquals("", header[0]);
+        assertEquals("", header[1]);
+    }
 }

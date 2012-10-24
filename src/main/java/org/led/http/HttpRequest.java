@@ -42,4 +42,10 @@ public class HttpRequest {
         return headers;
     }
 
+    @Override
+    public String toString() {
+        return "HttpRequest [method=" + method + ", path=" + path
+                + ", headers=" + headers + "]";
+    }
+
 }

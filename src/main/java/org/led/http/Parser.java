@@ -49,30 +49,42 @@ public final class Parser {
 
     protected static HttpRequest parseRequestLine(ByteBuffer buffer) {
         // read first word
-        ByteList bl = readWord(buffer);
+        ByteList bl = readWord(buffer, SPACE);
         HttpMethod method = HttpMethod.valueOf(new String(bl.toArray()));
 
         // Now read the request path
-        bl = readWord(buffer);
+        bl = readWord(buffer, SPACE);
         String path = new String(bl.toArray());
-        // Forget about rest of the line
+        // read rest of the line
+        readRestOfLine(buffer);
+
         return new HttpRequest(method, path);
     }
 
-    protected static String[] parseHeaderLine(ByteBuffer buffer) {
-        return null;
+    protected static String[] parseHeaderLine(final ByteBuffer buffer) {
+        ByteList bl = readWord(buffer, COLON);
+        String[] header = new String[2];
+        header[0] = new String(bl.toArray()).trim();
+        bl = readWord(buffer, LF);
+        header[1] = new String(bl.toArray()).trim();
+
+        return header;
     }
 
-    protected static ByteList readWord(ByteBuffer buffer) {
+    protected static ByteList readWord(ByteBuffer buffer, byte separator) {
         ByteList bl = new ByteList();
+        byte sep = separator == 0 ? SPACE : separator;
         byte b = 0;
-        while (b != SPACE) {
-
-            b = buffer.get();
-            if (b != SPACE) {
-                bl.add(b);
-            }
+        while ((b = buffer.get()) != separator && b != CR) {
+            bl.add(b);
         }
         return bl;
+    }
+
+    protected static void readRestOfLine(ByteBuffer buffer) {
+        byte b = 0;
+        while ((b = buffer.get()) != LF) {
+
+        }
     }
 }

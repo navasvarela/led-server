@@ -8,7 +8,6 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.util.concurrent.ExecutionException;
 
@@ -24,7 +23,6 @@ public class HttpProtocolHandler implements
             .getLogger(HttpProtocolHandler.class);
     private final Charset UTF_8 = Charset.forName("UTF-8");
     private final CharsetEncoder encoder = UTF_8.newEncoder();
-    private final CharsetDecoder decoder = UTF_8.newDecoder();
 
     private static final int BUFFER_SIZE = 4 * 1024;
 
@@ -55,41 +53,39 @@ public class HttpProtocolHandler implements
         // possible.
         LOG.debug("Handling message");
         ByteBuffer buf = ByteBuffer.allocateDirect(BUFFER_SIZE);
-        String message = "";
 
         try {
             // Clear the buffer and read bytes from socket
             buf.clear();
             int bytesRead;
 
-            do {
-                bytesRead = channel.read(buf).get();
+            bytesRead = channel.read(buf).get();
 
-                if (bytesRead != -1) {
-                    buf.flip();
-                    // Read the bytes from the buffer ...;
-                    // TODO 1. Read Request Line and get Request Object
-                    HttpRequest request = Parser.parseRequestLine(buf);
-                    // TODO 2. Read Content Headers
-                    String[] header = new String[2];
-                    while (header != null) {
-                        header = Parser.parseHeaderLine(buf);
-                        if (header != null) {
-                            request.addHeader(header[0], header[1]);
-                        }
-                    }
+            if (bytesRead != -1) {
+                buf.flip();
+                // Read the bytes from the buffer ...;
+                // 1. Read Request Line and get Request Object
+                HttpRequest request = Parser.parseRequestLine(buf);
+                // TODO 2. Read Content Headers
+                String[] header = new String[2];
+                while ((header = Parser.parseHeaderLine(buf)) != null
+                        && !"".equalsIgnoreCase(header[0])) {
 
-                    // TODO 4. Apply Filters
-                    // TODO 5. Invoke RequestHandler/Router
-                    LOG.debug("Reading...");
-                    // message += readFromByteBuffer(buf);
-                    buf.clear();
+                    request.addHeader(header[0], header[1]);
 
                 }
-            } while (bytesRead != -1 && bytesRead == BUFFER_SIZE);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("REQUEST: " + message);
+                // TODO 3. Read body (what about multipart?)
+                // TODO 4. Apply Filters
+                // TODO 5. Invoke RequestHandler/Router
+
+                buf.clear();
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("REQUEST: " + request);
+                }
+
             }
+            // Read the rest of the request.
             channel.write(toByteBuffer(HTTP_1_1 + HttpStatus.OK));
         } catch (ExecutionException | InterruptedException
                 | CharacterCodingException e) {
