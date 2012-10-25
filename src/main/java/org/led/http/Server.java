@@ -38,7 +38,8 @@ public class Server {
         serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 
         serverSocketChannel.accept(null, new HttpProtocolHandler(
-                serverSocketChannel, configuration.getMaxPostMB()));
+                serverSocketChannel, configuration.getHandlerFactory(),
+                configuration.getMaxPostMB()));
         started = true;
         LOG.debug("Server started successfully");
         try {

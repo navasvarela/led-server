@@ -29,9 +29,11 @@ public class HttpProtocolHandler implements
     private static final int BUFFER_SIZE = 4 * 1024;
 
     private final AsynchronousServerSocketChannel listener;
+    private final RequestHandlerFactory handlerFactory;
 
     public HttpProtocolHandler(AsynchronousServerSocketChannel theListener,
-            int max) {
+            RequestHandlerFactory factory, int max) {
+        handlerFactory = factory;
         listener = theListener;
         maxPostMB = max * 1024 * 1024;
     }
@@ -40,7 +42,8 @@ public class HttpProtocolHandler implements
     public void completed(AsynchronousSocketChannel result, Void theAttachment) {
         // process next request
         LOG.debug("Completed");
-        listener.accept(null, new HttpProtocolHandler(listener, maxPostMB));
+        listener.accept(null, new HttpProtocolHandler(listener, handlerFactory,
+                maxPostMB));
         handle(result);
 
     }
@@ -80,24 +83,25 @@ public class HttpProtocolHandler implements
                 byte[] bodyBytes = ChannelUtils.readFully(buffer, channel,
                         maxPostMB);
                 request.setBody(bodyBytes);
+                buffer.clear();
                 // TODO 4. Apply Filters
                 // TODO 5. Invoke RequestHandler/Router
-
-                buffer.clear();
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("REQUEST: " + request);
                 }
+                HttpResponse response = new HttpResponse(channel);
+                RequestHandler handler = handlerFactory
+                        .newRequestHandler(request);
+                handler.handle(request, response);
 
             }
             // Read the rest of the request.
-            channel.write(toByteBuffer(HTTP_1_1 + HttpStatus.OK));
-        } catch (ExecutionException | InterruptedException
-                | CharacterCodingException e) {
+
+        } catch (ExecutionException | InterruptedException e) {
             LOG.error(e);
             try {
-                channel.write(toByteBuffer("HTTP 1.1 "
-                        + HttpStatus.INTERNALERROR));
+                channel.write(toByteBuffer(HTTP_1_1 + HttpStatus.INTERNALERROR));
             } catch (CharacterCodingException e1) {
                 LOG.error("Cannot Send Response: " + e1.getMessage(), e1);
             }

@@ -58,7 +58,7 @@ public class HttpRequest {
     public String toString() {
         String string = "HttpRequest [method=" + method + ", path=" + path
                 + ", headers=" + headers;
-        if (body != null && body.length < 128) {
+        if (body != null && body.length < SMALL_BODY_LIMIT) {
             string += ", body=" + new String(body);
         }
         return string + "]";

@@ -19,6 +19,7 @@ import org.apache.http.util.EntityUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.led.simple.SimpleRequestHandler;
 import org.led.util.Util;
 
 public class ServerIntegrationTest {
@@ -31,7 +32,8 @@ public class ServerIntegrationTest {
 
             @Override
             public void run() {
-                server = new Server(new ServerConfiguration(8889, 10, 10));
+                server = new Server(new ServerConfiguration(8889, 10, 10,
+                        new SimpleRequestHandler()));
                 try {
                     server.start();
                     Thread.sleep(1000);
@@ -63,7 +65,7 @@ public class ServerIntegrationTest {
         // setup
 
         // act
-        HttpGet get = new HttpGet("http://localhost:8889/test");
+        HttpGet get = new HttpGet("http://localhost:8889/LICENSE-2.0.txt");
         HttpClient client = new DefaultHttpClient();
         HttpResponse response = client.execute(get);
 
